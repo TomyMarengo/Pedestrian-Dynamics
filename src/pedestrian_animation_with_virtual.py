@@ -19,6 +19,7 @@ unique_colors = [
 
 # Read the filtered_merged_file into a DataFrame
 df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df_virtual = pd.read_csv('../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
@@ -44,7 +45,7 @@ def update(frame):
     trail_lines = []
 
     current_frame = df[df['Frame'] == frame]
-    
+
     for uid, color in zip(unique_ids, colors):
         # Extract data for the current pedestrian ID
         ped_data = current_frame[current_frame['ID'] == uid]
@@ -69,10 +70,28 @@ def update(frame):
             # Draw current position
             dot = ax.scatter(x, y, color=color, s=100)
             scatter_dots.append(dot)
+    
+    # Draw virtual pedestrian
+    virtual_ped = df_virtual[df_virtual['Frame'] == frame]
+    
+    if not virtual_ped.empty:
+        x, y = virtual_ped['X'].values[0], virtual_ped['Y'].values[0]
+        
+        uid = len(unique_ids)
+        if uid not in trail_dict:
+            trail_dict[uid] = []
+        trail_dict[uid].append((x, y))
+        trail_dict[uid] = trail_dict[uid][-10:]
+        trail_x, trail_y = zip(*trail_dict[uid])
+        line, = ax.plot(trail_x, trail_y, color='black')
+        trail_lines.append(line)
+        
+        dot = ax.scatter(x, y, color='black', s=100)
+        scatter_dots.append(dot)
 
 # Create the animation
 ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
 
 # Save as GIF
-ani.save('../gif/pedestrian_dynamics.gif', writer='pillow')
+ani.save('../gif/pedestrian_dynamics_with_virtual.gif', writer='pillow')
 print('Animation saved!')
