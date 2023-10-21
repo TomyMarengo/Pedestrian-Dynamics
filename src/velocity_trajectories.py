@@ -14,10 +14,10 @@ for uid in df['ID'].unique():
     ped_data = df[df['ID'] == uid].sort_values('Frame')
     
     plt.figure()
-    plt.plot(ped_data['Frame'], ped_data['Velocity'])
-    plt.xlabel('Frame')
-    plt.ylabel('Velocity Magnitude')
-    plt.title(f'Particle {int(uid)} Velocity vs Time')
+    plt.plot(ped_data['Frame']*4/30, ped_data['Velocity'])
+    plt.xlabel('Tiempo (s)')
+    plt.ylabel('Velocidad $(\\frac{m}{s})$')
+    plt.title(f'Agente {int(uid)}')  # TODO: Quitar esto
     plt.savefig(f'../img/velocity_trajectory_{int(uid)}.png')
     plt.close()
     

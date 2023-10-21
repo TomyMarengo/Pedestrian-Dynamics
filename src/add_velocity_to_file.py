@@ -37,5 +37,8 @@ for uid in df['ID'].unique():
     plt.savefig(f'../img/velocity_trajectory_{int(uid)}.png')
     plt.close()
 
+# Save the y column multiplied by -1
+df['Y'] *= -1
+
 # Save the updated DataFrame with the velocity column back to a .txt file
 df.to_csv('../txt/merged_trajectories_with_velocity.txt', sep='\t', index=False, header=False)
