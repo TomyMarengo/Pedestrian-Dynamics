@@ -16,8 +16,7 @@ data2 = read_file('../txt/trajectories2.txt')
 
 # Update ID for the second list
 for row in data2:
-    row[3] += 14
-    
+    row[3] += 14   
 
 # Merge and sort data
 merged_data = sorted(data1 + data2, key=lambda x: (x[0], x[3]))

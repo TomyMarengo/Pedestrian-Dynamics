@@ -13,6 +13,9 @@ dt = 4 / 30
 if not os.path.exists('../img'):
     os.makedirs('../img')
 
+# Initialize a velocity column with NaN values
+df['Velocity'] = np.nan
+
 # Calculate velocity for each particle and save the plot
 for uid in df['ID'].unique():
     ped_data = df[df['ID'] == uid].sort_values('Frame')
@@ -23,6 +26,9 @@ for uid in df['ID'].unique():
     # Calculate magnitude of velocity
     velocity = np.sqrt((dx / dt) ** 2 + (dy / dt) ** 2)
     
+    # Update the velocity column in the main dataframe for the current particle
+    df.loc[ped_data.index, 'Velocity'] = velocity.values
+    
     plt.figure()
     plt.plot(ped_data['Frame'][1:], velocity[1:])
     plt.xlabel('Frame')
@@ -30,3 +36,6 @@ for uid in df['ID'].unique():
     plt.title(f'Particle {int(uid)} Velocity vs Time')
     plt.savefig(f'../img/velocity_trajectory_{int(uid)}.png')
     plt.close()
+
+# Save the updated DataFrame with the velocity column back to a .txt file
+df.to_csv('../txt/merged_trajectories_with_velocity.txt', sep='\t', index=False, header=False)
