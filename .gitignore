@@ -162,3 +162,7 @@ cython_debug/
 gif/
 
 img/
+
+frames/
+
+video/
