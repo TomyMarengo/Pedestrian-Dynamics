@@ -19,7 +19,7 @@ unique_colors = [
 
 # Read the filtered_merged_file into a DataFrame
 df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
-df_virtual = pd.read_csv('../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X'])
+df_virtual = pd.read_csv('../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'Velocity', 'Action'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
