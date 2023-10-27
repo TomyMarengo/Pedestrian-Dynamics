@@ -14,4 +14,22 @@ def particle_velocity(frame):
         particles = df.set_index('ID')['Velocity'].to_dict()
         return particles
 
-              
+#Constant data of the equations
+Aa = 1,25 
+Ba = 1,25
+
+#the position is updated
+#vi = eit * v
+#xi = xi + vi*t
+
+#the direction eit 
+#eit = xv - xi / abs(xv - xi) 
+
+#the overlap
+#eij = xi - xj / abs(xi - xj) 
+
+#collision vector
+#nc = eij * Aa * math.exp(-dij / (Ba * math.cos(Oj)))
+
+#avoidance direction
+#eia = nc + eit / abs(nc + eit)                     
