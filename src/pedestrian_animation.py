@@ -19,7 +19,7 @@ unique_colors = [
 ]
 
 # Read the filtered_merged_file into a DataFrame
-df = pd.read_csv('../txtmerged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('..txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
@@ -60,29 +60,29 @@ def update(frame):
         if not ped_data.empty:
             x, y = ped_data['X'].values[0], ped_data['Y'].values[0]
             # Update trail dictionary
-            #if uid not in trail_dict:
-            #    trail_dict[uid] = []
-            #trail_dict[uid].append((x, y))
+            if uid not in trail_dict:
+                trail_dict[uid] = []
+            trail_dict[uid].append((x, y))
             
             # Keep only the last 10 positions for the trail
-            #trail_dict[uid] = trail_dict[uid][-10:]
+            trail_dict[uid] = trail_dict[uid][-10:]
             
             # Draw trail line
-            #trail_x, trail_y = zip(*trail_dict[uid])
-            #line, = ax.plot(trail_x, trail_y, color=color)
-            #trail_lines.append(line)
+            trail_x, trail_y = zip(*trail_dict[uid])
+            line, = ax.plot(trail_x, trail_y, color=color)
+            trail_lines.append(line)
             
             # Draw current position
             ax.set_axis_off()
             dot = ax.scatter(x, y, color=color, s=100)
             scatter_dots.append(dot)
-            plt.savefig(f'C:\\Users\\desir\\IdeaProjects\\PedestrianDynamics\\frames\\frame_{int(frame)}.png', transparent=True)
+            plt.savefig(f'..frames/frame_{int(frame)}.png', transparent=True)
 
     
 
 # Create the animation
-#ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
+ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
 
 # Save as GIF
-#ani.save('C:\\Users\\desir\\IdeaProjects\\PedestrianDynamics\\gif\\pedestrian_dynamics.gif', writer='pillow')
-#print('Animation saved!')
+ani.save('../gif/pedestrian_dynamics.gif', writer='pillow')
+print('Animation saved!')
