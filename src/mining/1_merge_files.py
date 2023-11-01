@@ -11,8 +11,8 @@ def write_file(data, filename):
             f.write('\t'.join(map(str, line)) + '\n')
 
 # Read files
-data1 = read_file('../txt/trajectories1.txt')
-data2 = read_file('../txt/trajectories2.txt')
+data1 = read_file('../../txt/trajectories1.txt')
+data2 = read_file('../../txt/trajectories2.txt')
 
 # Update ID for the second list
 for row in data2:
@@ -25,4 +25,4 @@ merged_data = sorted(data1 + data2, key=lambda x: (x[0], x[3]))
 filtered_data = [row for row in merged_data if row[0] < 252]
 
 # Write to a new file
-write_file(filtered_data, '../txt/merged_trajectories.txt')
+write_file(filtered_data, '../../txt/merged_trajectories.txt')

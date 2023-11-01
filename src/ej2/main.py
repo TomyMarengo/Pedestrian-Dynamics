@@ -9,7 +9,7 @@ taus = [0.2 + i * 0.01 for i in range(int((3 - 0.2) / 0.01) + 1)]
 # Time step between frames
 dt = 4 / 30
 # Read the merged txt file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Calculate velocity for one particle
 def velocity_trajectory(uid):
@@ -221,9 +221,6 @@ plt.ylabel('TauA')
 plt.grid(True)
 plt.legend()
 plt.show()
-
-
-
 
 
 avg_df = avg_df.round(2)

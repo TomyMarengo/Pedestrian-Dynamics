@@ -4,17 +4,19 @@ import numpy as np
 import os
 
 # Read the merged txt file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Time step between frames
 dt = 4 / 30
 
 # Create img/ folder if not exists
-if not os.path.exists('../img'):
-    os.makedirs('../img')
+if not os.path.exists('../../img'):
+    os.makedirs('../../img')
 
 # Initialize a velocity column with NaN values
 df['Velocity'] = np.nan
+df['vy'] = np.nan
+df['vx'] = np.nan
 
 # Calculate velocity for each particle and save the plot
 for uid in df['ID'].unique():
@@ -25,20 +27,17 @@ for uid in df['ID'].unique():
     
     # Calculate magnitude of velocity
     velocity = np.sqrt((dx / dt) ** 2 + (dy / dt) ** 2)
+
+    vx = dx/dt
+    vy=-dy/dt
     
     # Update the velocity column in the main dataframe for the current particle
+    df.loc[ped_data.index, 'vx'] = vx.values
+    df.loc[ped_data.index, 'vy'] = vy.values
     df.loc[ped_data.index, 'Velocity'] = velocity.values
-    
-    plt.figure()
-    plt.plot(ped_data['Frame'][1:], velocity[1:])
-    plt.xlabel('Frame')
-    plt.ylabel('Velocity Magnitude')
-    plt.title(f'Particle {int(uid)} Velocity vs Time')
-    plt.savefig(f'../img/velocity_trajectory_{int(uid)}.png')
-    plt.close()
 
 # Save the y column multiplied by -1
 df['Y'] *= -1
 
 # Save the updated DataFrame with the velocity column back to a .txt file
-df.to_csv('../txt/merged_trajectories_with_velocity.txt', sep='\t', index=False, header=False)
+df.to_csv('../../txt/merged_trajectories_with_vx_vy.txt', sep='\t', index=False, header=False)

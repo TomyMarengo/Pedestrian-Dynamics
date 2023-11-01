@@ -2,10 +2,8 @@ import math
 import pandas as pd
 import numpy as np
 
-
-
 # Read the merged txt file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
+df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
 dt = 4 / 30
 
 def dist(x1, y1, x2, y2 ):
@@ -92,8 +90,6 @@ def sfm_eulermod (tau, vdx, vdy, v0x, v0y, x0, y0, m=70 ):
     return x[num_steps-1], vx[num_steps-1], y[num_steps-1], vy[num_steps-1]
 
 
-
-
 def reach_target(i): 
     tau = tp
     target = targets[i+1] #aca iria el
@@ -136,8 +132,6 @@ def next_collisions():
         
         if tc > 0:
             collisions.append((id, tc))
-    
-    
 
 
 def simulate():
@@ -194,7 +188,7 @@ def simulate():
             target = targets[i_target+1]
             t_dist =dist(x,y, target[0], target[1])
             i_target = i_target + 1
-                 
+            
         frame = frame +1
             
         #next_collisions()
@@ -210,9 +204,8 @@ def simulate():
     #calculo de nuevo
 
 
-
 print
 df2 = simulate()
 
-nombre_archivo = '../txt/virtual_pedestrian_trajectory.txt'
+nombre_archivo = '../../txt/virtual_pedestrian_trajectory.txt'
 df2.to_csv(nombre_archivo, sep=' ', header=False, index=False)

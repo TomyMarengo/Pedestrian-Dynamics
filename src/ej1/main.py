@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 
 # Read the stable video 
-cap = cv2.VideoCapture("../stable_video.avi")
+cap = cv2.VideoCapture("video/stable_video.avi")
 
-video_output = "../video_output.avi"
+video_output = "video/video_output.avi"
 
 # Create videoWriter
 fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec para AVI, ajusta según el formato deseado
@@ -14,7 +14,7 @@ frame_size = (1100, 620)
 video_writer = cv2.VideoWriter(video_output, fourcc, fps, frame_size)
 
 # Read the filtered_merged_file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 df = df.reset_index()
 
 # Convert coordinates to pixels from transformation_matrix.py 

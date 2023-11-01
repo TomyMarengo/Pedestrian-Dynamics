@@ -5,8 +5,8 @@ import numpy as np
 import os
 
 # Create img/ folder if not exists
-if not os.path.exists('../gif'):
-    os.makedirs('../gif')
+if not os.path.exists('gif'):
+    os.makedirs('gif')
     
 # Define a list of unique colors
 unique_colors = [
@@ -18,8 +18,8 @@ unique_colors = [
 ]
 
 # Read the filtered_merged_file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
-df_virtual = pd.read_csv('../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'Velocity'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df_virtual = pd.read_csv('../../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'Velocity'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
@@ -100,5 +100,5 @@ def update(frame):
 ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
 
 # Save as GIF
-ani.save('../gif/pedestrian_dynamics_with_virtual.gif', writer='pillow')
+ani.save('gif/pedestrian_dynamics_with_virtual.gif', writer='pillow')
 print('Animation saved!')

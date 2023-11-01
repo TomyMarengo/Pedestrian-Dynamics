@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import os
 
 # Read the txt file with velocities into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Create img/ folder if not exists
-if not os.path.exists('../img'):
-    os.makedirs('../img')
+if not os.path.exists('img'):
+    os.makedirs('img')
 
 # Plot velocity vs frame for each particle and save the plot
 for uid in df['ID'].unique():
@@ -18,7 +18,7 @@ for uid in df['ID'].unique():
     plt.xlabel('Tiempo (s)')
     plt.ylabel('Velocidad $(\\frac{m}{s})$')
     plt.title(f'Agente {int(uid)}')  # TODO: Quitar esto
-    plt.savefig(f'../img/velocity_trajectory_{int(uid)}.png')
+    plt.savefig(f'img/velocity_trajectory_{int(uid)}.png')
     plt.close()
     
 print('Done!')

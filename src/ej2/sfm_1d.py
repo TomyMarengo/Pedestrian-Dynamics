@@ -13,11 +13,11 @@ vd = 1.63
 # Time step between frames
 dt = 4 / 30
 # Read the merged txt file into a DataFrame
-df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Create img/ folder if not exists
-if not os.path.exists('../img'):
-    os.makedirs('../img')
+if not os.path.exists('img'):
+    os.makedirs('img')
 
 # Calculate velocity for one particle
 def velocity_trajectory(uid):
@@ -69,9 +69,9 @@ plt.xlabel('Tiempo (s)')
 plt.ylabel('Velocidad $(\\frac{m}{s})$')
 plt.title(f'Agente {int(uid)}')  # TODO: Quitar esto
 plt.legend()
-plt.savefig(f'../img/velocity_tau_{int(uid)}.png')
+plt.savefig(f'img/velocity_tau_{int(uid)}.png')
 plt.show()
-print(f'Graph saved at ../img/velocity_tau_{int(uid)}.png')
+print(f'Graph saved at img/velocity_tau_{int(uid)}.png')
 
 # Extraer los valores de tau y MSE
 taus = [tau for tau, mse in errors]
@@ -88,9 +88,6 @@ plt.ylabel('Error Cuadrático Medio (MSE)')
 plt.title('MSE vs Tau')
 plt.grid(True)
 plt.show()
-
-
-""""aca"""
 
 plt.figure()
 plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o")
