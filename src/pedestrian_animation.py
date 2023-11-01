@@ -18,7 +18,7 @@ unique_colors = [
 ]
 
 # Read the filtered_merged_file into a DataFrame
-df = pd.read_csv('..txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
+df = pd.read_csv('../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
@@ -75,7 +75,7 @@ def update(frame):
             ax.set_axis_off()
             dot = ax.scatter(x, y, color=color, s=100)
             scatter_dots.append(dot)
-            plt.savefig(f'..frames/frame_{int(frame)}.png', transparent=True)
+            plt.savefig(f'../frames/frame_{int(frame)}.png', transparent=True)
 
     
 

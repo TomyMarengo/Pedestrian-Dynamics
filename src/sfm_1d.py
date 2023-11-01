@@ -88,3 +88,13 @@ plt.ylabel('Error Cuadrático Medio (MSE)')
 plt.title('MSE vs Tau')
 plt.grid(True)
 plt.show()
+
+
+""""aca"""
+
+plt.figure()
+plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o")
+v = sfm_1D(tau_for_min_mse, 0.25, vd, from_frame, to_frame)
+v = v[::100]
+plt.plot(t, v, marker='o')
+plt.show()
