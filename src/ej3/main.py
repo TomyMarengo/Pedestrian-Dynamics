@@ -78,7 +78,7 @@ class VirtualPedestrian:
                 f.write(f"In frame {self.real_frame} the closest pedestrian is {closest_pedestrian['ID']} at a distance of {min_distance}\n")
         
         
-        if min_distance < 0.6:  # Assuming 0.6 is the collision threshold
+        if min_distance < 1:  # 1 more than 0.6 of the collision radius
             # Get directional vector of the closest pedestrian
             ped_direction = (closest_pedestrian['vx'], closest_pedestrian['vy'])
             
