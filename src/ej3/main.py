@@ -85,10 +85,7 @@ class VirtualPedestrian:
         return "left" if cross_product > 0 else "right"
 
     def avoid_collision(self):
-        if self.real_frame >= 250: 
-            frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
-        else:
-            frame_df = self.df.loc[self.df['Frame'] == self.real_frame + 2]
+        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         min_distance = float('inf')
         closest_pedestrian = None
 
@@ -122,7 +119,7 @@ class VirtualPedestrian:
                 self.target = self.targets[self.i_target]  # Continue heading towards real target
                 return
 
-            if min_distance < 1.2:  
+            if min_distance < 1.5:  
                 # Perpendicular directions (left and right)
                 p_right = np.array([-u_norm[1], u_norm[0]])
                 p_left = -p_right
@@ -175,7 +172,7 @@ class VirtualPedestrian:
         # Convert to degrees, if desired
         angle_degrees = math.degrees(angle)
         
-                # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
+        # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
         if abs(angle_degrees) <= 40:
             self.v = (self.v[0] * self.adjustment_factor, self.v[1] * self.adjustment_factor)  # Slow down
 
@@ -244,8 +241,14 @@ df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespac
 targets = [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
 initial_position = (9.75, -6.5)
 
+# With medians
+# VD = 1.43
+# DA = 1.14
+# TA = 0.68
+# TP = 0.76
+
+# A bit faster
 VD = 1.74
-#DA = 1.44
 DA = 1.14
 TA = 0.95
 TP = 0.62
