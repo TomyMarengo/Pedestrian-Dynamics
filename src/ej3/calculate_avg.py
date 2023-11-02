@@ -104,38 +104,6 @@ def calcVmin(uid):
 
     return vmin
 
-def calcFrames(uid):
-    intervalos = []  # Lista para almacenar los intervalos
-
-    frame_inicial = None
-    frame_actual = None
-    max_vel_en_intervalo = False
-
-    for index, row in df.iterrows():
-        if row['ID'] == uid:
-            frame = row['Frame']
-            velocidad = row['Velocity']
-
-            if frame_actual is None:
-                frame_inicial = frame
-                frame_actual = frame
-                max_vel_en_intervalo = False
-
-            if 1.2 <= velocidad <= 1.9:
-                max_vel_en_intervalo = True
-
-            if 0 <= velocidad <= 0.25 and max_vel_en_intervalo:
-                frame_cerca_cero = frame
-                intervalos.append((frame_inicial, frame_cerca_cero))
-                frame_inicial = frame
-                max_vel_en_intervalo = False
-
-            frame_actual = frame
-
-    for i, intervalo in enumerate(intervalos):
-        print(f'Intervalo {i + 1}: Frame inicio máxima velocidad: {intervalo[0]}, Frame cerca velocidad cero: {intervalo[1]}')
-
-    return intervalo
 
 # Define the parameters for the simulation
 from_frame = 1
