@@ -86,9 +86,13 @@ class VirtualPedestrian:
             # Calculate temporary target based on the sum of vectors
             temp_dx = ped_direction[0] + my_direction[0]
             temp_dy = ped_direction[1] + my_direction[1]
+            # Normalize the vector
+            norm = math.sqrt(temp_dx ** 2 + temp_dy ** 2)
+            temp_dx /= norm
+            temp_dy /= norm
             
             # Update the temporary target
-            self.target = (self.position[0] + temp_dx, self.position[1] + temp_dy)
+            self.target = (temp_dx, temp_dy)
         else:
             self.target = self.targets[self.i_target]
 
