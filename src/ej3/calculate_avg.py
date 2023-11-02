@@ -4,8 +4,6 @@ import math
 import numpy as np
 import os
 
-
-taus = [0.2 + i * 0.01 for i in range(int((3 - 0.2) / 0.01) + 1)]
 # Time step between frames
 dt = 4 / 30
 # Read the merged txt file into a DataFrame
@@ -107,8 +105,6 @@ def calcVmin(uid):
     return vmin
 
 # Define the parameters for the simulation
-tau = 1.0  # Time constant
-vmin = 0.0  # Minimum velocity
 from_frame = 1
 to_frame = 250
 
@@ -124,6 +120,7 @@ for uid in df['ID']:
     vmin = calcVmin(uid)
 
     # Calculate the optimal tau value and da for the current UID
+    #quiero que sea de todos los frames, ahi deberia analizar por tramos
     tauA, da = calcTauA(uid, vd, vmin, from_frame, to_frame)
     tauP = calcTauP(uid, vd, vmin, from_frame, to_frame)
     
@@ -131,7 +128,7 @@ for uid in df['ID']:
     tau_values.append(tauA)
     tau_values.append(tauP)
     da_values.append(da)
-    
+
     print(uid)
     print("Optimal tau:", tauA)
     print("Distance traveled (da):", da)
