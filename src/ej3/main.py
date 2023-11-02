@@ -53,6 +53,7 @@ class VirtualPedestrian:
         self.calculate_e_target()
 
         self.frame = 1
+        self.real_frame = 1
         self.df = df
         self.adjustment_factor = 0.90
 
@@ -63,7 +64,7 @@ class VirtualPedestrian:
         self.e_target = (dx / norm, dy / norm)
     
     def avoid_collision(self):
-        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         min_distance = float('inf')
         closest_pedestrian = None
         
@@ -90,10 +91,9 @@ class VirtualPedestrian:
             self.target = (self.position[0] + temp_dx, self.position[1] + temp_dy)
         else:
             self.target = self.targets[self.i_target]
-        self.calculate_e_target()
 
     def heading_to_same_target(self):
-        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         vector_to_temp_target = np.array(self.target) - np.array(self.position)
         distance_to_temp_target = np.linalg.norm(vector_to_temp_target)
 
@@ -123,14 +123,14 @@ class VirtualPedestrian:
         return False
 
     def calculate_collisions(self):
-        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         for i in range(len(frame_df)):
             if dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1]) < 0.6:  # 2 * 0.3 radius
                 pass
 
     def calculate_new_position(self):
         # self.calculate_collisions()
-        # self.avoid_collision()
+        self.avoid_collision()
         # self.heading_to_same_target()
         
         self.calculate_e_target()
@@ -158,8 +158,9 @@ class VirtualPedestrian:
         
         # Write data to output file
         if self.frame % 100 == 0:
+            self.real_frame += 1
             with open('../../txt/virtual_pedestrian_trajectory.txt', 'a') as f:
-                f.write(f"{self.frame//100 + 1}\t{self.position[1]}\t{self.position[0]}\t{self.v[0]}\t{self.v[1]}\t{self.target[1]}\t{self.target[0]}\n")
+                f.write(f"{self.real_frame}\t{self.position[1]}\t{self.position[0]}\t{self.v[0]}\t{self.v[1]}\t{self.target[1]}\t{self.target[0]}\n")
 
 
 # Read the merged txt file into a DataFrame
@@ -171,9 +172,9 @@ DA = 1.44
 TA = 0.95
 TP = 0.62
 
-with open('../../txt/virtual_pedestrian_trajectory.txt', 'a') as f:
+with open('../../txt/virtual_pedestrian_trajectory.txt', 'w') as f:
     f.write(f"{1}\t{initial_position[1]}\t{initial_position[0]}\t{0}\t{0}\t{targets[0][1]}\t{targets[0][0]}\n")
 
 pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df)
-for i in range(25100):
+for i in range(25000):
     pedestrian.calculate_new_position()
