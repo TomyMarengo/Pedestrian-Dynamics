@@ -70,6 +70,10 @@ def update(frame):
             # Draw current position
             dot = ax.scatter(x, y, color=color, s=100)
             scatter_dots.append(dot)
+            
+            # Add ID number inside the circle
+            text = ax.text(x, y, str(int(uid)), color='black', ha='center', va='center', fontweight='bold', fontsize=12)
+            scatter_dots.append(text)
         
     
     # Draw virtual pedestrian

@@ -36,8 +36,5 @@ for uid in df['ID'].unique():
     df.loc[ped_data.index, 'vy'] = vy.values
     df.loc[ped_data.index, 'Velocity'] = velocity.values
 
-# Save the y column multiplied by -1
-df['Y'] *= -1
-
 # Save the updated DataFrame with the velocity column back to a .txt file
 df.to_csv('../../txt/merged_trajectories_with_vx_vy.txt', sep='\t', index=False, header=False)

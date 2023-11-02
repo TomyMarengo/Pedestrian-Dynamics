@@ -68,11 +68,15 @@ class VirtualPedestrian:
         min_distance = float('inf')
         closest_pedestrian = None
         
-        for i in range(len(frame_df)):
-            distance = dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1])
-            if distance < min_distance:
-                min_distance = distance
-                closest_pedestrian = frame_df.iloc[i]
+        with open('../../txt/closest_pedestrians.txt', 'a') as f:
+            for _, pedestrian in frame_df.iterrows():
+                distance = dist(pedestrian['X'], pedestrian['Y'], self.position[0], self.position[1])
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_pedestrian = pedestrian
+            if self.frame % 100 == 0:
+                f.write(f"In frame {self.real_frame} the closest pedestrian is {closest_pedestrian['ID']} at a distance of {min_distance}\n")
+        
         
         if min_distance < 0.6:  # Assuming 0.6 is the collision threshold
             # Get directional vector of the closest pedestrian
