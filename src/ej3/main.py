@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import numpy as np
 from numpy import cross, array
+import matplotlib.pyplot as plt
 
 def dist(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -56,7 +57,7 @@ class VirtualPedestrian:
         self.frame = 1
         self.real_frame = 1
         self.df = df
-        self.adjustment_factor = 0.90
+        self.adjustment_factor = 0.99
         
         self.collisions = collisions # DATA
         self.distance_travelled = distance_travelled # DATA
@@ -73,7 +74,16 @@ class VirtualPedestrian:
         dy = self.targets[self.i_target][1] - self.position[1]
         norm = math.sqrt(dx ** 2 + dy ** 2)
         self.e_target = (dx / norm, dy / norm)
-    
+
+    def determine_direction(self, my_pos, my_vel, other_pos, other_vel):
+        rel_vel = np.array(other_vel) - np.array(my_vel)
+        rel_pos = np.array(other_pos) - np.array(my_pos)
+        
+        # Cross product to determine relative direction
+        cross_product = np.cross(rel_vel, rel_pos)
+        
+        return "left" if cross_product > 0 else "right"
+
     def avoid_collision(self):
         frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         min_distance = float('inf')
@@ -84,59 +94,54 @@ class VirtualPedestrian:
             if distance < min_distance:
                 min_distance = distance
                 closest_pedestrian = pedestrian
-        
+
         # DATA       
         self.minimum_distances.append(min_distance) 
         if min_distance < 0.6:
             self.collisions.append((self.real_frame, closest_pedestrian['ID']))
-        
-        if min_distance < 1.2 and closest_pedestrian['vx'] * closest_pedestrian['vy'] != 0:  # 1 more than 0.6 of the collision radius
-            # Get directional vector of the closest pedestrian
-            ped_direction = (closest_pedestrian['vx'], closest_pedestrian['vy'])
-            # Normalize the vector
-            norm = math.sqrt(ped_direction[0] ** 2 + ped_direction[1] ** 2)
-            ped_direction = (ped_direction[0] / norm, ped_direction[1] / norm)
-            # Get directional vector of the virtual pedestrian
-            self.calculate_e_real_target()
-            my_direction = self.e_target
-            # Calculate the angle between the two vectors
-            dot_product = np.dot(ped_direction, my_direction)
-            angle = np.arccos(dot_product / (np.linalg.norm(ped_direction) * np.linalg.norm(my_direction)))
-            angle_degrees = np.degrees(angle)
-            
-            cross_prod = cross(array(my_direction), array(ped_direction))
 
-            if angle_degrees < 60:  # Pedestrian is behind me
-                # Choose direction based on the cross product
-                if cross_prod > 0:  # Pedestrian is on my left
-                    temp_direction = (-ped_direction[1], ped_direction[0])  # Rotate clockwise
-                else:  # Pedestrian is on my right
-                    temp_direction = (ped_direction[1], -ped_direction[0])  # Rotate counter-clockwise
-            elif angle_degrees > 120:  # Pedestrian is in front of me
-                # Similar logic for the pedestrian in front
-                if cross_prod < 0:
-                    temp_direction = (-ped_direction[1], ped_direction[0])
-                else:
-                    temp_direction = (ped_direction[1], -ped_direction[0])
-            else:
-                # Pedestrian is on the side, combine vectors
-                temp_dx = ped_direction[0] + my_direction[0]
-                temp_dy = ped_direction[1] + my_direction[1]
-                temp_direction = (temp_dx, temp_dy)
+        if closest_pedestrian['vx'] * closest_pedestrian['vy'] != 0:
+            self.calculate_e_real_target()
+        
+            # Compute the direction vector from 'Me' to 'Target'
+            u = np.array(self.e_target) - np.array(self.position)
+            u_norm = u / np.linalg.norm(u)
+
+            # Direction from 'Me' to 'Other'
+            dir_to_other = np.array([closest_pedestrian['X'] - self.position[0], closest_pedestrian['Y'] - self.position[1]])
             
-            # Normalize the temporary direction
-            norm_temp = math.sqrt(temp_direction[0] ** 2 + temp_direction[1] ** 2)
-            temp_direction_normalized = (temp_direction[0] / norm_temp, temp_direction[1] / norm_temp)
-    
-            # Update the temporary target
-            self.target = temp_direction_normalized
-        else:
-            self.target = self.targets[self.i_target]
+            # Check relative velocities
+            my_speed = np.linalg.norm(self.v)
+            other_speed = np.linalg.norm([closest_pedestrian['vx'], closest_pedestrian['vy']])
+            
+            # If "Me" is behind "Other", slower and both are heading in roughly the same direction
+            if np.dot(dir_to_other, u_norm) > 0 and my_speed <= other_speed:
+                self.target = self.targets[self.i_target]  # Continue heading towards real target
+                return
+
+            if min_distance < 1.2:  
+                # Perpendicular directions (left and right)
+                p_right = np.array([-u_norm[1], u_norm[0]])
+                p_left = -p_right
+
+                # Check which side the 'Other' is more likely to pass based on their direction
+                other_dir = self.determine_direction(self.position, self.v, (closest_pedestrian['X'], closest_pedestrian['Y']), (closest_pedestrian['vx'], closest_pedestrian['vy']))
+
+                if other_dir == "left":
+                    temp_target = self.position + (5 * closest_pedestrian['vx'] , 5 * closest_pedestrian['vy']) * p_right + u_norm
+                else:
+                        temp_target = self.position + (5 * closest_pedestrian['vx'] , 5 * closest_pedestrian['vy']) * p_left + u_norm
+
+                self.target = temp_target
+            else:
+                self.target = self.targets[self.i_target]
 
     def heading_to_same_target(self):
         frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
-        self.calculate_e_target()
-        distance_to_temp_target = dist(self.position[0], self.position[1], self.target[0], self.target[1])
+        self.calculate_e_real_target()
+        distance_to_target = dist(self.position[0], self.position[1], self.targets[self.i_target][0], self.targets[self.i_target][1])
+        if distance_to_target > self.DA:
+            return
         
         min_distance = float('inf')
         closest_pedestrian = None
@@ -146,10 +151,13 @@ class VirtualPedestrian:
             if distance < min_distance:
                 min_distance = distance
                 closest_pedestrian = pedestrian
-
+                
+        cp_distance_to_target = dist(closest_pedestrian['X'], closest_pedestrian['Y'], self.targets[self.i_target][0], self.targets[self.i_target][1])
+        if cp_distance_to_target > distance_to_target:
+            return
+        
         v1 = (closest_pedestrian['vx'], closest_pedestrian['vy'])
-        v2 = (self.target[0] - closest_pedestrian['X'], self.target[1] - closest_pedestrian['Y'])
-        pedestrian_distance_to_temp_target = dist(self.position[0], self.position[1], closest_pedestrian['X'], closest_pedestrian['Y'])
+        v2 = (self.targets[self.i_target][0] - closest_pedestrian['X'], self.targets[self.i_target][1] - closest_pedestrian['Y'])
         
         dot_product = v1[0] * v2[0] + v1[1] * v2[1]
         # Magnitudes
@@ -164,28 +172,38 @@ class VirtualPedestrian:
         # Convert to degrees, if desired
         angle_degrees = math.degrees(angle)
         
-        # print("Frame: ", self.real_frame)  
-        # print("My distance to target: ", distance_to_temp_target)
-        # print("Pedestrian distance to target: ", pedestrian_distance_to_temp_target)
-        
-        # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
-        if (abs(angle_degrees) <= 10 and abs(angle_degrees) >= 0) or (abs(angle_degrees) >= 350 and abs(angle_degrees) <= 360):
-            # If within distance DA, decide whether to slow down or speed up based on who is closer
-            if pedestrian_distance_to_temp_target <= distance_to_temp_target <= self.DA:
-                self.v = (0, 0)  # Slow down
-                print("Stopped in ", self.real_frame)
+                # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
+        if abs(angle_degrees) <= 40:
+            self.v = (self.v[0] * self.adjustment_factor, self.v[1] * self.adjustment_factor)  # Slow down
+            print("Stopped in ", self.real_frame)
 
     def calculate_collisions(self):
         frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         for i in range(len(frame_df)):
-            if dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1]) < 0.6:  # 2 * 0.3 radius
-                pass
+            distance = dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1])
+            
+            if distance < 0.6:  # 2 * 0.3 radius
+                overlap = 0.6 - distance  # How much the pedestrians overlap
+                
+                # Hooke's law to calculate force
+                k = 50  # This is an arbitrary value, adjust as needed
+                force_magnitude = k * overlap
+                
+                # Calculate direction from real pedestrian to virtual pedestrian
+                direction = np.array(self.position) - np.array([frame_df.iloc[i]['X'], frame_df.iloc[i]['Y']])
+                direction_norm = direction / np.linalg.norm(direction)
+                
+                # Calculate force vector
+                force = force_magnitude * direction_norm
+                
+                # Add force to the virtual pedestrian's velocity or position
+                self.force += force
 
     def calculate_new_position(self):
         self.last_force = self.force
         self.force = (0, 0)
         
-        # self.calculate_collisions()
+        self.calculate_collisions()
         self.avoid_collision()
         self.heading_to_same_target()
         
@@ -223,8 +241,10 @@ class VirtualPedestrian:
 df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
 targets = [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
 initial_position = (9.75, -6.5)
-VD = 1.59
-DA = 1.44
+
+VD = 1.74
+#DA = 1.44
+DA = 1.14
 TA = 0.95
 TP = 0.62
 
@@ -246,3 +266,11 @@ print(f"Number of collisions: {len(unique_collisions)}")
 print(f"Collisions: {unique_collisions}")
 print(f"Distance travelled: {pedestrian.distance_travelled} m")
 print(f"Average velocity: {pedestrian.distance_travelled / (25000 * 4/30/100)} m/s")
+
+x_values = [4/30/100 * i for i in range(25000)]
+plt.plot(x_values, pedestrian.minimum_distances, marker = 'o', linestyle='-')
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Distancia mínima (m)')
+plt.xticks(np.arange(0, 251 * 4/30, 5))
+plt.grid(True)
+plt.savefig(f'img/minimum_distances.png')
