@@ -19,7 +19,7 @@ unique_colors = [
 
 # Read the filtered_merged_file into a DataFrame
 df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity'])
-df_virtual = pd.read_csv('../../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'Velocity'])
+df_virtual = pd.read_csv('../../txt/virtual_pedestrian_trajectory.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'VelX', 'VelY', 'TargetY', 'TargetX'])
 
 # Create a list of unique IDs and assign a unique color to each ID
 unique_ids = df['ID'].unique()
@@ -44,13 +44,7 @@ def update(frame):
     scatter_dots = []
     trail_lines = []
 
-    targets= [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
-
     current_frame = df[df['Frame'] == frame]
-
-    for target in targets:
-        dot = ax.scatter(target[0], target[1], color='black', marker='x')
-        scatter_dots.append(dot)
 
     for uid, color in zip(unique_ids, colors):
         # Extract data for the current pedestrian ID
@@ -95,6 +89,8 @@ def update(frame):
         
         dot = ax.scatter(x, y, color='black', s=100)
         scatter_dots.append(dot)
+        cross = ax.scatter(virtual_ped['TargetX'].values[0], virtual_ped['TargetY'].values[0], color='black', marker='x', s=100)
+        scatter_dots.append(cross)
 
 # Create the animation
 ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)

@@ -2,210 +2,178 @@ import math
 import pandas as pd
 import numpy as np
 
-# Read the merged txt file into a DataFrame
-df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
-dt = 4 / 30
-
-def dist(x1, y1, x2, y2 ):
+def dist(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-def mg(a, b):
-    return math.sqrt((a**2)+(b**2))
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2' """
+    v1_u = v1 / np.linalg.norm(v1)
+    v2_u = v2 / np.linalg.norm(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-targets= [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
-
-frame = 1
-x = 9.75
-y = -6.5
-v = 0
-vd= 1.7
-da= 1.1
-ta = 0.63
-tp = 0.66
-tau = tp
-vx =0
-vy =0
-target = targets[0]
-i_target = 0
-
-t_dist = dist(x,y, target[0], target[1])
-
-dist_total = t_dist
-for i in range(0, 2):
-    dist_total = dist_total + dist(targets[i][0], targets[i][1], targets[i+1][0],targets[i+1][1])
-
-print(dist_total)
-
-#Get the time from frames
-time = df['Frame'] * 4/30
-
-# Get the velocity for each particle in for one frame
-def particle_velocity(frame):
-    if df['Frame'] == frame:
-        particles = df.set_index('ID')['Velocity'].to_dict()
-        return particles
+def beeman(r, v, f, last_f, e_target, tau, VD):
+    # Constants
+    dt = 4/30/100
+    m = 70
     
-def sfm_1D(tau, vd, v0, from_frame, to_frame, m = 70):
-    """Simulates the Social Force Model in 1D for a single particle."""
-    # Initialization
-    num_steps = (to_frame - from_frame + 1 ) * 100
-    v = np.zeros(num_steps)
-    v[0] = v0
-
-    # Simulation Loop
-    for i in range(1, num_steps):
-        # Compute the autopropulsion force
-        f = m * (vd - v[i-1]) / tau
-        # Compute the acceleration
-        a = f / m
-        # Update the velocity using the acceleration
-        v[i] = v[i-1] + a * dt/100
-
-    return v
-
-def sfm_eulermod (tau, vdx, vdy, v0x, v0y, x0, y0, m=70 ):
-    num_steps = 100
-    x = np.zeros(num_steps)
-    x[0] = x0
-    y = np.zeros(num_steps)
-    y[0] = y0
-    vx = np.zeros(num_steps)
-    vx[0] = v0x
-    vy = np.zeros(num_steps)
-    vy[0] = v0y
-
-    step_dt = dt / num_steps
-    for i in range(1, num_steps):
-        f = m * (vdx - vx[i-1]) / tau
-        a = f / m
-        vx[i] = vx[i-1] + a * step_dt
-        x[i] = x[i-1]+ vx[i]*step_dt +(a/2)*(step_dt**2)
-
-        f = m * (vdy - vy[i-1]) / tau
-        a = f / m
-        vy[i] = vy[i-1] + a * step_dt
-        y[i] = y[i-1]+ vy[i]*step_dt +(a/2)*(step_dt**2)
-        
-
-    return x[num_steps-1], vx[num_steps-1], y[num_steps-1], vy[num_steps-1]
-
-
-def reach_target(i): 
-    tau = tp
-    target = targets[i+1] #aca iria el
-    t_dist =dist(x,y, target[0], target[1])
-
-
-def collides (x2, y2, vx2, vy2):
-    deltaVx = vx2 -vx
-    deltaVy = vy2 - vy
-    deltaX = x2 -x
-    deltaY = y2 - y
-
-    sigma = "suma radios"
-    deltaVR = deltaVx * deltaX + deltaVy *deltaY
-    deltaVV = deltaVx*deltaVx + deltaVy*deltaVy
-    deltaRR = deltaX * deltaX + deltaY * deltaY
-
-    d = deltaVR * deltaVR - deltaVV * (deltaRR - sigma * sigma)
-
-
-    if deltaVR >= 0 or d<0:
-        tc = -1
-    else: 
-        tc = - (deltaVR + math.sqrt(d)) / deltaVV
+    # Predict the position and velocity
+    r_pred_x = r[0] + v[0] * dt + (2 / 3) * f[0] * (dt ** 2) / m - (1 / 6) * last_f[0] * (dt ** 2) / m
+    r_pred_y = r[1] + v[1] * dt + (2 / 3) * f[1] * (dt ** 2) / m - (1 / 6) * last_f[1] * (dt ** 2) / m
+    r_pred = (r_pred_x, r_pred_y)
     
-    return tc
-
-
-def next_collisions():
-    filas = df.loc[df['Frame'] == frame]
-    collisions = []
-    for index, fila in filas.iterrows():
-        id = fila['ID']
-        x2 = fila['X']
-        y2 = fila['Y']
-        vx2 = fila['vx']
-        vy2 = fila['vy']
-        
-        tc = collides(x2, y2, vx2, vy2)
-        
-        if tc > 0:
-            collisions.append((id, tc))
-
-
-def simulate():
-
-    targets= [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
-
-    frame = 1
-    x = 9.75
-    y = -6.5
-    v = 0
-    vd= 1.59
-    da= 1.44
-    ta = 0.95
-    tp = 0.62
-    tau = tp
-    vx =0
-    vy =0
-    target = targets[0]
-    i_target = 0
-
-    t_dist = dist(x,y, target[0], target[1])
-    trajectory = []
-    trajectory.append((1, y,x, 0))
-
+    v_pred_x = v[0] + (3 / 2) * f[0] * dt / m - (1 / 2) * last_f[0] * dt / m
+    v_pred_y = v[1] + (3 / 2) * f[1] * dt / m - (1 / 2) * last_f[1] * dt / m
     
+    # Calculate the force at the predicted position
+    f_pred_x = m * (VD * e_target[0] - v_pred_x) / tau
+    f_pred_y = m * (VD * e_target[1] - v_pred_y) / tau
+    
+    # Correct the velocity
+    v_corr_x = v[0] + (1 / 3) * f_pred_x * dt / m + (5 / 6) * f[0] * dt / m - (1 / 6) * last_f[0] * dt / m 
+    v_corr_y = v[1] + (1 / 3) * f_pred_y * dt / m + (5 / 6) * f[1] * dt / m - (1 / 6) * last_f[1] * dt / m
+    v_corr = (v_corr_x, v_corr_y)
+    
+    return r_pred, v_corr
 
-    while frame < 252 and i_target < len(targets):
+class VirtualPedestrian:
+    def __init__(self, initial_position, targets, VD, DA, TA, TP, df):
+        self.VD = VD
+        self.DA = DA
+        self.TA = TA
+        self.TP = TP
+        self.MASS = 70
+        self.position = initial_position
+        self.v = (0, 0)
+        self.force = (0, 0)
+        self.last_force = self.force
 
-        distX = target[0] - x
-        distY = target[1] - y
-        vdx = vd * (distX / mg(distX, distY))
-        vdy = vd * (distY / mg(distX, distY))
+        self.targets = targets
+        self.i_target = 0
+        self.target = self.targets[0]
+        self.calculate_e_target()
+
+        self.frame = 1
+        self.df = df
+        self.adjustment_factor = 0.90
+
+    def calculate_e_target(self):
+        dx = self.target[0] - self.position[0]
+        dy = self.target[1] - self.position[1]
+        norm = math.sqrt(dx ** 2 + dy ** 2)
+        self.e_target = (dx / norm, dy / norm)
+    
+    def avoid_collision(self):
+        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        min_distance = float('inf')
+        closest_pedestrian = None
         
-        if tau ==tp:
-            xn, vxn, yn, vyn = sfm_eulermod (tau, vdx, vdy, vx, vy, x, y, m=70)
-        elif tau == ta:
-            xn, vxn, yn, vyn = sfm_eulermod (tau, 0, 0, vx, vy, x, y, m=70)
-        trajectory.append((frame, yn,xn, mg(vxn, vyn)))
-        x = xn
-        y=yn
-        vx = vxn
-        vy = vyn
-
-        t_dist = dist(x,y, target[0], target[1])
+        for i in range(len(frame_df)):
+            distance = dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1])
+            if distance < min_distance:
+                min_distance = distance
+                closest_pedestrian = frame_df.iloc[i]
         
-        if t_dist < da :
-            tau = ta
-            print('da')
-        if t_dist < 0.1:
-            print('target')
-            if i_target == len(targets)-1:
-                break
-            tau = tp
-            target = targets[i_target+1]
-            t_dist =dist(x,y, target[0], target[1])
-            i_target = i_target + 1
+        if min_distance < 0.6:  # Assuming 0.6 is the collision threshold
+            # Get directional vector of the closest pedestrian
+            ped_direction = (closest_pedestrian['vx'], closest_pedestrian['vy'])
             
-        frame = frame +1
+            # Get directional vector towards the real target
+            dx = self.target[0] - self.position[0]
+            dy = self.target[1] - self.position[1]
+            my_direction = (dx, dy)
             
-        #next_collisions()
+            # Calculate temporary target based on the sum of vectors
+            temp_dx = ped_direction[0] + my_direction[0]
+            temp_dy = ped_direction[1] + my_direction[1]
+            
+            # Update the temporary target
+            self.target = (self.position[0] + temp_dx, self.position[1] + temp_dy)
+        else:
+            self.target = self.targets[self.i_target]
+        self.calculate_e_target()
 
-    trajectory = pd.DataFrame(trajectory, columns=['Frame', 'Y', 'X', 'Velocity'])
-    
-    return trajectory
+    def heading_to_same_target(self):
+        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        vector_to_temp_target = np.array(self.target) - np.array(self.position)
+        distance_to_temp_target = np.linalg.norm(vector_to_temp_target)
 
-    #empiezo
-    #calculo colisiones pero al principio va a dar 0 las v asi q no se
-    #ver si estoy a la distancia con la que tengo q cambiar el tau
-    #veo los proximos choques o el proximo --> muevo el target si va a chocar
-    #calculo de nuevo
+        for _, pedestrian in frame_df.iterrows():
+            # Pedestrian's velocity vector
+            pedestrian_velocity_vector = np.array([pedestrian['vx'], pedestrian['vy']])
+            pedestrian_pos = np.array([pedestrian['X'], pedestrian['Y']])
+            pedestrian_to_temp_target_vector = np.array(self.target) - pedestrian_pos
+            
+            # Check if the pedestrian is moving
+            if np.linalg.norm(pedestrian_velocity_vector) > 0:
+                # Angle between the direction of the real pedestrian and the virtual pedestrian's temp target
+                angle_to_target = angle_between(pedestrian_velocity_vector, pedestrian_to_temp_target_vector)
+                
+                # Convert angle to degrees for comparison
+                angle_to_target_deg = np.degrees(angle_to_target)
+                
+                # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
+                if abs(angle_to_target_deg) <= 7:
+                    # If within distance DA, decide whether to slow down or speed up based on who is closer
+                    if distance_to_temp_target <= self.DA:
+                        self.v = (max(0, self.v[0] * self.adjustment_factor), max(0, self.v[1] * self.adjustment_factor))  # Slow down
+                    else:
+                        self.v = (min(self.e_target[0] * self.VD, self.v[0] + (self.v[0] * (1 - self.adjustment_factor))),
+                                min(self.e_target[1] * self.VD, self.v[1] + (self.v[1] * (1 - self.adjustment_factor))))  # Speed up
+                    return True
+        return False
+
+    def calculate_collisions(self):
+        frame_df = self.df.loc[self.df['Frame'] == self.frame]
+        for i in range(len(frame_df)):
+            if dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1]) < 0.6:  # 2 * 0.3 radius
+                pass
+
+    def calculate_new_position(self):
+        # self.calculate_collisions()
+        # self.avoid_collision()
+        # self.heading_to_same_target()
+        
+        self.calculate_e_target()
+        # Calculate distance to the target
+        distance_to_target = dist(self.position[0], self.position[1], self.target[0], self.target[1])
+        # Choose the appropriate tau
+        tau = self.TA if distance_to_target < self.DA else self.TP
+
+        # Update velocity using the social force model: F = m * (vd * e - v) / tau
+        self.last_force = self.force
+        
+        force_x = self.MASS * (self.VD * self.e_target[0] - self.v[0]) / tau
+        force_y = self.MASS * (self.VD * self.e_target[1] - self.v[1]) / tau
+        self.force = (force_x, force_y)
+        
+        self.position, self.v = beeman(self.position, self.v, self.force, self.last_force, self.e_target, tau, self.VD)
+        
+        distance_to_target = dist(self.position[0], self.position[1], self.target[0], self.target[1])
+        if distance_to_target < 0.2:
+            self.i_target = (self.i_target + 1) % len(self.targets)
+            self.target = self.targets[self.i_target]
+
+        # Increment frame counter
+        self.frame += 1
+        
+        # Write data to output file
+        if self.frame % 100 == 0:
+            with open('../../txt/virtual_pedestrian_trajectory.txt', 'a') as f:
+                f.write(f"{self.frame//100 + 1}\t{self.position[1]}\t{self.position[0]}\t{self.v[0]}\t{self.v[1]}\t{self.target[1]}\t{self.target[0]}\n")
 
 
-print
-df2 = simulate()
+# Read the merged txt file into a DataFrame
+df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
+targets = [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
+initial_position = (9.75, -6.5)
+VD = 1.59
+DA = 1.44
+TA = 0.95
+TP = 0.62
 
-nombre_archivo = '../../txt/virtual_pedestrian_trajectory.txt'
-df2.to_csv(nombre_archivo, sep=' ', header=False, index=False)
+with open('../../txt/virtual_pedestrian_trajectory.txt', 'a') as f:
+    f.write(f"{1}\t{initial_position[1]}\t{initial_position[0]}\t{0}\t{0}\t{targets[0][1]}\t{targets[0][0]}\n")
+
+pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df)
+for i in range(25100):
+    pedestrian.calculate_new_position()
