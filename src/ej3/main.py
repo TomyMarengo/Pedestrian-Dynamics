@@ -85,7 +85,10 @@ class VirtualPedestrian:
         return "left" if cross_product > 0 else "right"
 
     def avoid_collision(self):
-        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
+        if self.real_frame >= 250: 
+            frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
+        else:
+            frame_df = self.df.loc[self.df['Frame'] == self.real_frame + 2]
         min_distance = float('inf')
         closest_pedestrian = None
 
@@ -175,7 +178,6 @@ class VirtualPedestrian:
                 # Check if the real pedestrian is heading towards the virtual pedestrian's target within a 7-degree margin
         if abs(angle_degrees) <= 40:
             self.v = (self.v[0] * self.adjustment_factor, self.v[1] * self.adjustment_factor)  # Slow down
-            print("Stopped in ", self.real_frame)
 
     def calculate_collisions(self):
         frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
