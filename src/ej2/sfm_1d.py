@@ -91,6 +91,8 @@ plt.show()
 
 plt.figure()
 plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o")
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Velocidad $(\\frac{m}{s})$')
 v = sfm_1D(tau_for_min_mse, 0.25, vd, from_frame, to_frame)
 v = v[::100]
 plt.plot(t, v, marker='o')

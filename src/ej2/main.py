@@ -15,6 +15,19 @@ df = pd.read_csv('../../txt/merged_trajectories_with_velocity.txt', delim_whites
 def velocity_trajectory(uid):
     ped_data = df[df['ID'] == uid].sort_values('Frame')
     
+def trajectory_graph(id, vd, frames):
+    ped_data = df[df['ID'] == id].sort_values('Frame')
+    plt.figure()
+    plt.plot(ped_data['Frame']*4/30, ped_data['Velocity'], marker = "x")
+    
+    for frame_set in frames:
+        for frame in frame_set:
+            plt.axvline(x=frame *4/30, color='red', linestyle='--')
+
+    plt.axhline(y=vd, color='green', linestyle='-.', label='vd')
+    plt.legend()
+    plt.savefig(f'../../img/ej2/{int(id)}_trajectory.png')
+    plt.close()
 
 def sfm_1D(tau, vd, v0, from_frame, to_frame, m = 70):
     """Simulates the Social Force Model in 1D for a single particle."""
@@ -37,7 +50,7 @@ def sfm_1D(tau, vd, v0, from_frame, to_frame, m = 70):
 
 
 #desac
-def calcTauA(uid, vd, from_frame, to_frame):
+def calcTauA(uid, vd, vmin, from_frame, to_frame):
     
     velocity_trajectory(uid)
     #get initial position
@@ -62,7 +75,7 @@ def calcTauA(uid, vd, from_frame, to_frame):
     taus = [0.2 + i * 0.01 for i in range(int((3 - 0.2) / 0.01) + 1)]
     
     for i, tau in enumerate(taus):
-        v = sfm_1D(tau, 0, vd, from_frame, to_frame)
+        v = sfm_1D(tau, vmin, vd, from_frame, to_frame)
         v = v[::100]
         aux = np.mean((v_original - v) **2)
         errors.append((tau, aux))
@@ -73,13 +86,24 @@ def calcTauA(uid, vd, from_frame, to_frame):
     min_mse = min(mse_values)
     tauA = [tau for tau, mse in zip(taus, mse_values) if mse == min_mse][0]
 
-
+    t = np.arange(from_frame, to_frame + 1, 1)
+    t = t * 4 / 30
+    plt.figure()
+    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='v-exp')
+    plt.xlabel('Tiempo (s)')
+    plt.ylabel('Velocidad $(\\frac{m}{s})$')
+    v = sfm_1D(tauA, vmin, vd, from_frame, to_frame)
+    v = v[::100]
+    plt.plot(t, v, marker='o', label='v-sfm')
+    plt.legend()
+    plt.savefig(f'../../img/ej2/{int(uid)}_tauA_{tauA}.png')
+    plt.close()
 
     return tauA, da
 
 
 #ac
-def calcTauP(uid, vd, from_frame, to_frame):
+def calcTauP(uid, vd, vmin, from_frame, to_frame):
     velocity_trajectory(uid)
 
     t = np.arange(from_frame, to_frame + 1, 1)
@@ -93,7 +117,7 @@ def calcTauP(uid, vd, from_frame, to_frame):
     taus = [0.2 + i * 0.01 for i in range(int((3 - 0.2) / 0.01) + 1)]
 
     for i, tau in enumerate(taus):
-        v = sfm_1D(tau, vd, 0, from_frame, to_frame)
+        v = sfm_1D(tau, vd, vmin, from_frame, to_frame)
         v = v[::100]
         aux = np.mean((v_original - v) **2)
         errors.append((tau, aux))
@@ -104,21 +128,36 @@ def calcTauP(uid, vd, from_frame, to_frame):
     min_mse = min(mse_values)
     tauP = [tau for tau, mse in zip(taus, mse_values) if mse == min_mse][0]
 
+    t = np.arange(from_frame, to_frame + 1, 1)
+    t = t * 4 / 30
+    plt.figure()
+    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='v-exp')
+    plt.xlabel('Tiempo (s)')
+    plt.ylabel('Velocidad $(\\frac{m}{s})$')
+    v = sfm_1D(tauP, vd, vmin,  from_frame, to_frame)
+    v = v[::100]
+    plt.plot(t, v, marker='o', label='v-sfm')
+    plt.legend()
+    plt.savefig(f'../../img/ej2/{int(uid)}_tauP_{tauP}.png')
+    plt.close()
+
     return tauP
 
-def eventTaus(id, vd, f1, f2, f3):
-    ta, da = calcTauA(id, vd, f1, f2)
-    tp = calcTauP(id, vd, f2, f3)
+def eventTaus(id, vd, vmin, f1, f2, f3):
+    ta, da = calcTauA(id, vd, vmin, f1, f2)
+    tp = calcTauP(id, vd, vmin, f2, f3)
     return (da, ta, tp)
 
 
 avg_dict = {}
 
-def calc_avg(agent_id, vd, frames):
+def calc_avg(agent_id, vd, vmin, frames):
     data = []
-    for frame_set in frames:
-        data.append(eventTaus(agent_id, vd, *frame_set))
+    for vmin_value, frame_set in zip(vmin, frames):
+        data.append(eventTaus(agent_id, vd, vmin_value, *frame_set))
 
+    trajectory_graph(agent_id, vd, frames)
+    print(data)
     # Avg
     avg_da = pd.Series([item[0] for item in data]).mean()
     avg_tauA = pd.Series([item[1] for item in data]).mean()
@@ -128,40 +167,50 @@ def calc_avg(agent_id, vd, frames):
 
 
 # Agent 1
+vmins_1 = [0.3024966672957964, 0.0]
 frames_agent_1 = [(55, 58, 63), (92, 98, 102)]
-calc_avg(1, 1.25, frames_agent_1)
+calc_avg(1, 1.25, vmins_1 ,frames_agent_1)
+trajectory_graph(1,1.25,frames_agent_1)
 
 # Agent 2
+vmins_2 =[0.213895527771886, 0.2138947867901168]
 frames_agent_2 = [(38, 46, 56), (153, 162, 176)]
-calc_avg(2, 1.63, frames_agent_2)
+calc_avg(2, 1.63, vmins_2, frames_agent_2)
 
 # Agent 4
+vmins_4= [0.0, 0.21389629455372]
 frames_agent_4 = [(54, 63, 70), (180, 187, 193)]
-calc_avg(4, 1.7, frames_agent_4)
+calc_avg(4, 1.7, vmins_4, frames_agent_4)
 
 # Agent 9
+vmins_9 = [0.0,0.0]
 frames_agent_9 = [(40, 51, 59), (86, 96, 106)]
-calc_avg(9, 1.37, frames_agent_9)
+calc_avg(9, 1.37, vmins_9, frames_agent_9)
 
 # Agent 10
+vmins_10=[0.21389629455372, 0.0, 0.0]
 frames_agent_10 = [(64, 74, 83),(150, 159, 171), (199, 207, 214)]
-calc_avg(10, 1.9, frames_agent_10)
+calc_avg(10, 1.9, vmins_10, frames_agent_10)
 
 # Agent 12
+vmins_12 = [0.0, 0.0]
 frames_agent_12 = [(106, 122, 133), (191, 208, 218)]
-calc_avg(12, 1.5, frames_agent_12)
+calc_avg(12, 1.5, vmins_12, frames_agent_12)
 
 # Agent 15
+vmins_15=[0.0, 0.0]
 frames_agent_15 = [(141, 155, 168), (198, 209, 220)]
-calc_avg(15, 1.9, frames_agent_15)
+calc_avg(15, 1.9, vmins_15, frames_agent_15)
 
 # Agent 18
+vmins_18=[0.3024944985021428, 0.2138958365211782]
 frames_agent_18 = [(100, 103, 106), (228, 231, 235)]
-calc_avg(18, 1.5, frames_agent_18)
+calc_avg(18, 1.5, vmins_18, frames_agent_18)
 
 # Agent 21
+vmins_21=[0.3024944985021384, 0.2138947779639499, 0.0]
 frames_agent_21 = [(15, 25, 34),(87, 94, 103), (208, 216, 226)]
-calc_avg(21, 1.55, frames_agent_21)
+calc_avg(21, 1.55, vmins_21, frames_agent_21)
 
 
 
