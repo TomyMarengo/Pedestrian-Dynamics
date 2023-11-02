@@ -1,6 +1,7 @@
 import math
 import pandas as pd
 import numpy as np
+from numpy import cross, array
 
 def dist(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -36,7 +37,7 @@ def beeman(r, v, f, last_f, e_target, tau, VD):
     return r_pred, v_corr
 
 class VirtualPedestrian:
-    def __init__(self, initial_position, targets, VD, DA, TA, TP, df):
+    def __init__(self, initial_position, targets, VD, DA, TA, TP, df, collisions, distance_travelled, minimum_distances):
         self.VD = VD
         self.DA = DA
         self.TA = TA
@@ -56,6 +57,10 @@ class VirtualPedestrian:
         self.real_frame = 1
         self.df = df
         self.adjustment_factor = 0.90
+        
+        self.collisions = collisions # DATA
+        self.distance_travelled = distance_travelled # DATA
+        self.minimum_distances = minimum_distances # DATA
 
     def calculate_e_target(self):
         dx = self.target[0] - self.position[0]
@@ -63,40 +68,68 @@ class VirtualPedestrian:
         norm = math.sqrt(dx ** 2 + dy ** 2)
         self.e_target = (dx / norm, dy / norm)
     
+    def calculate_e_real_target(self):
+        dx = self.targets[self.i_target][0] - self.position[0]
+        dy = self.targets[self.i_target][1] - self.position[1]
+        norm = math.sqrt(dx ** 2 + dy ** 2)
+        self.e_target = (dx / norm, dy / norm)
+    
     def avoid_collision(self):
         frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
         min_distance = float('inf')
         closest_pedestrian = None
+
+        for _, pedestrian in frame_df.iterrows():
+            distance = dist(pedestrian['X'], pedestrian['Y'], self.position[0], self.position[1])
+            if distance < min_distance:
+                min_distance = distance
+                closest_pedestrian = pedestrian
         
-        with open('../../txt/closest_pedestrians.txt', 'a') as f:
-            for _, pedestrian in frame_df.iterrows():
-                distance = dist(pedestrian['X'], pedestrian['Y'], self.position[0], self.position[1])
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_pedestrian = pedestrian
-            if self.frame % 100 == 0:
-                f.write(f"In frame {self.real_frame} the closest pedestrian is {closest_pedestrian['ID']} at a distance of {min_distance}\n")
-        
+        # DATA       
+        self.minimum_distances.append(min_distance) 
+        if min_distance < 0.6:
+            self.collisions.append((self.real_frame, closest_pedestrian['ID']))
         
         if min_distance < 1:  # 1 more than 0.6 of the collision radius
             # Get directional vector of the closest pedestrian
             ped_direction = (closest_pedestrian['vx'], closest_pedestrian['vy'])
-            
-            # Get directional vector towards the real target
-            dx = self.target[0] - self.position[0]
-            dy = self.target[1] - self.position[1]
-            my_direction = (dx, dy)
-            
-            # Calculate temporary target based on the sum of vectors
-            temp_dx = ped_direction[0] + my_direction[0]
-            temp_dy = ped_direction[1] + my_direction[1]
             # Normalize the vector
-            norm = math.sqrt(temp_dx ** 2 + temp_dy ** 2)
-            temp_dx /= norm
-            temp_dy /= norm
+            norm = math.sqrt(ped_direction[0] ** 2 + ped_direction[1] ** 2)
+            ped_direction = (ped_direction[0] / norm, ped_direction[1] / norm)
+            # Get directional vector of the virtual pedestrian
+            self.calculate_e_target()
+            my_direction = self.e_target
+            # Calculate the angle between the two vectors
+            dot_product = np.dot(ped_direction, my_direction)
+            angle = np.arccos(dot_product / (np.linalg.norm(ped_direction) * np.linalg.norm(my_direction)))
+            angle_degrees = np.degrees(angle)
             
+            cross_prod = cross(array(my_direction), array(ped_direction))
+
+            if angle_degrees < 60:  # Pedestrian is behind me
+                # Choose direction based on the cross product
+                if cross_prod < 0:  # Pedestrian is on my left
+                    temp_direction = (-ped_direction[1], ped_direction[0])  # Rotate clockwise
+                else:  # Pedestrian is on my right
+                    temp_direction = (ped_direction[1], -ped_direction[0])  # Rotate counter-clockwise
+            elif angle_degrees > 120:  # Pedestrian is in front of me
+                # Similar logic for the pedestrian in front
+                if cross_prod < 0:
+                    temp_direction = (-ped_direction[1], ped_direction[0])
+                else:
+                    temp_direction = (ped_direction[1], -ped_direction[0])
+            else:
+                # Pedestrian is on the side, combine vectors
+                temp_dx = ped_direction[0] + my_direction[0]
+                temp_dy = ped_direction[1] + my_direction[1]
+                temp_direction = (temp_dx, temp_dy)
+            
+            # Normalize the temporary direction
+            norm_temp = math.sqrt(temp_direction[0] ** 2 + temp_direction[1] ** 2)
+            temp_direction_normalized = (temp_direction[0] / norm_temp, temp_direction[1] / norm_temp)
+    
             # Update the temporary target
-            self.target = (temp_dx, temp_dy)
+            self.target = temp_direction_normalized
         else:
             self.target = self.targets[self.i_target]
 
@@ -141,23 +174,24 @@ class VirtualPedestrian:
         self.avoid_collision()
         # self.heading_to_same_target()
         
-        self.calculate_e_target()
         # Calculate distance to the target
-        distance_to_target = dist(self.position[0], self.position[1], self.target[0], self.target[1])
+        distance_to_target = dist(self.position[0], self.position[1], self.targets[self.i_target][0], self.targets[self.i_target][1])
         # Choose the appropriate tau
         tau = self.TA if distance_to_target < self.DA else self.TP
 
         # Update velocity using the social force model: F = m * (vd * e - v) / tau
+        self.calculate_e_target()
         self.last_force = self.force
-        
         force_x = self.MASS * (self.VD * self.e_target[0] - self.v[0]) / tau
         force_y = self.MASS * (self.VD * self.e_target[1] - self.v[1]) / tau
         self.force = (force_x, force_y)
         
+        aux_position = self.position # DATA
         self.position, self.v = beeman(self.position, self.v, self.force, self.last_force, self.e_target, tau, self.VD)
+        self.distance_travelled += dist(aux_position[0], aux_position[1], self.position[0], self.position[1]) # DATA
         
-        distance_to_target = dist(self.position[0], self.position[1], self.target[0], self.target[1])
-        if distance_to_target < 0.2:
+        distance_to_target = dist(self.position[0], self.position[1], self.targets[self.i_target][0], self.targets[self.i_target][1])
+        if distance_to_target <= 0.3:
             self.i_target = (self.i_target + 1) % len(self.targets)
             self.target = self.targets[self.i_target]
 
@@ -168,21 +202,35 @@ class VirtualPedestrian:
         if self.frame % 100 == 0:
             self.real_frame += 1
             with open('../../txt/virtual_pedestrian_trajectory.txt', 'a') as f:
-                f.write(f"{self.real_frame}\t{self.position[1]}\t{self.position[0]}\t{self.v[0]}\t{self.v[1]}\t{self.target[1]}\t{self.target[0]}\n")
+                f.write(f"{self.real_frame}\t{self.position[1]}\t{self.position[0]}\t{self.v[1]}\t{self.v[0]}\t{self.target[1]}\t{self.target[0]}\n")
 
 
 # Read the merged txt file into a DataFrame
 df = pd.read_csv('../../txt/merged_trajectories_with_vx_vy.txt', delim_whitespace=True, header=None, names=['Frame', 'Y', 'X', 'ID', 'Velocity', 'vy', 'vx'])
 targets = [(-9.75, 6.5), (-3.25, -6.5), (3.25, -6.5), (9.75, 6.5)]
 initial_position = (9.75, -6.5)
-VD = 1.59
-DA = 1.44
+#VD = 1.59
+#DA = 1.44
+VD = 1.7
+DA = 1.14
 TA = 0.95
 TP = 0.62
 
 with open('../../txt/virtual_pedestrian_trajectory.txt', 'w') as f:
     f.write(f"{1}\t{initial_position[1]}\t{initial_position[0]}\t{0}\t{0}\t{targets[0][1]}\t{targets[0][0]}\n")
 
-pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df)
+# DATA
+collisions = []
+distance_travelled = 0
+minimum_distances = []
+
+pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df, collisions, distance_travelled, minimum_distances)
 for i in range(25000):
     pedestrian.calculate_new_position()
+
+unique_collisions = sorted(list(set(pedestrian.collisions)), key=lambda x: x[0])
+print(f"Minimum distances: {[pedestrian.minimum_distances[i] for i in range(len(pedestrian.minimum_distances)) if i % 100 == 0]} m")
+print(f"Number of collisions: {len(unique_collisions)}")
+print(f"Collisions: {unique_collisions}")
+print(f"Distance travelled: {pedestrian.distance_travelled} m")
+print(f"Average velocity: {pedestrian.distance_travelled / (25000 * 4/30/100)} m/s")

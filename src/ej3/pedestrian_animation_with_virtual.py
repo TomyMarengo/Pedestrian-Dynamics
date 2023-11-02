@@ -7,7 +7,12 @@ import os
 # Create img/ folder if not exists
 if not os.path.exists('gif'):
     os.makedirs('gif')
-    
+if not os.path.exists('img'):
+    os.makedirs('img')
+for i in range(26):
+    if not os.path.exists('img/' + str(i)):
+        os.makedirs('img/' + str(i))
+
 # Define a list of unique colors
 unique_colors = [
     '#c0c0c0', '#2f4f4f', '#808000', '#483d8b', '#b22222', 
@@ -95,6 +100,9 @@ def update(frame):
         scatter_dots.append(dot)
         cross = ax.scatter(virtual_ped['TargetX'].values[0], virtual_ped['TargetY'].values[0], color='black', marker='x', s=100)
         scatter_dots.append(cross)
+    
+    # Save current frame as png
+    plt.savefig(f'img/{str(int(frame//10))}/frame_{frame}.png')
 
 # Create the animation
 ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
