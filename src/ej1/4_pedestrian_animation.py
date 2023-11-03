@@ -79,8 +79,6 @@ def update(frame):
             scatter_dots.append(dot)
             plt.savefig(f'frames/frame_{int(frame)}.png', transparent=True)
 
-    
-
 # Create the animation
 ani = animation.FuncAnimation(fig, update, frames=np.unique(df['Frame']), interval=200)
 
