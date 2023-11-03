@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 from numpy import cross, array
 import matplotlib.pyplot as plt
+import os
+
+if not os.path.exists('img'):
+    os.makedirs('img')
 
 def dist(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -248,7 +252,7 @@ initial_position = (9.75, -6.5)
 # TP = 0.76
 
 # A bit faster
-VD = 1.74
+VD = 1.65
 DA = 1.56
 TA = 0.68
 TP = 0.48
