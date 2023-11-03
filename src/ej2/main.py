@@ -20,11 +20,22 @@ def trajectory_graph(id, vd, frames):
     plt.figure()
     plt.plot(ped_data['Frame']*4/30, ped_data['Velocity'], marker = "x")
     
-    for frame_set in frames:
-        for frame in frame_set:
-            plt.axvline(x=frame *4/30, color='red', linestyle='--')
+    for i, frame_set in enumerate(frames):
+        v_a = df[(df['ID'] == id) & (df['Frame'] >= frame_set[0]) & (df['Frame'] <= frame_set[1])]
+       
+        v_p = df[(df['ID'] == id) & (df['Frame'] >= frame_set[1]) & (df['Frame'] <= frame_set[2])]
+        if i == 0:
+            plt.plot( v_a['Frame']*4/30, v_a['Velocity'] , marker = "x", color = 'g', label='Arribos elegidos')
+            plt.plot( v_p['Frame']*4/30, v_p['Velocity'] , marker = "x", color = 'm', label='Partidas elegidas')
+        else:
+            plt.plot( v_a['Frame']*4/30, v_a['Velocity'] , marker = "x", color = 'g')
+            plt.plot( v_p['Frame']*4/30, v_p['Velocity'] , marker = "x", color = 'm')
 
-    plt.axhline(y=vd, color='green', linestyle='-.', label='vd')
+    
+    plt.ylim(0,2.3)
+    plt.xlabel('Tiempo (s)')
+    plt.ylabel('Velocidad $(\\frac{m}{s})$')
+    plt.axhline(y=vd, color='r', linestyle='-.', label=f'$V_d$={vd}')
     plt.legend()
     plt.savefig(f'../../img/ej2/{int(id)}_trajectory.png')
     plt.close()
@@ -89,12 +100,14 @@ def calcTauA(uid, vd, vmin, from_frame, to_frame):
     t = np.arange(from_frame, to_frame + 1, 1)
     t = t * 4 / 30
     plt.figure()
-    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='v-exp')
+    plt.axhline(y=vd, color='r', linestyle='-.', label=f'$V_d$={vd}')
+    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='Experimental')
     plt.xlabel('Tiempo (s)')
     plt.ylabel('Velocidad $(\\frac{m}{s})$')
     v = sfm_1D(tauA, vmin, vd, from_frame, to_frame)
     v = v[::100]
-    plt.plot(t, v, marker='o', label='v-sfm')
+    
+    plt.plot(t, v, marker='o', label='Simulada')
     plt.legend()
     plt.savefig(f'../../img/ej2/{int(uid)}_tauA_{tauA}.png')
     plt.close()
@@ -131,12 +144,14 @@ def calcTauP(uid, vd, vmin, from_frame, to_frame):
     t = np.arange(from_frame, to_frame + 1, 1)
     t = t * 4 / 30
     plt.figure()
-    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='v-exp')
+    plt.axhline(y=vd, color='r', linestyle='-.', label=f'$V_i$={vd}')
+    plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o", label='Experimental')
     plt.xlabel('Tiempo (s)')
     plt.ylabel('Velocidad $(\\frac{m}{s})$')
+    
     v = sfm_1D(tauP, vd, vmin,  from_frame, to_frame)
     v = v[::100]
-    plt.plot(t, v, marker='o', label='v-sfm')
+    plt.plot(t, v, marker='o', label='Simulada')
     plt.legend()
     plt.savefig(f'../../img/ej2/{int(uid)}_tauP_{tauP}.png')
     plt.close()
@@ -163,14 +178,13 @@ def calc_avg(agent_id, vd, vmin, frames):
     avg_tauA = pd.Series([item[1] for item in data]).mean()
     avg_tauP = pd.Series([item[2] for item in data]).mean()
 
-    avg_dict[agent_id] = {'vd': vd, 'Average_da': avg_da, 'Average_tauA': avg_tauA, 'Average_tauP': avg_tauP}
+    avg_dict[agent_id] = {'$v_d$': vd, '$d_a$': avg_da, '$\\tau_a$': avg_tauA, '$\\tau_p$': avg_tauP}
 
 
 # Agent 1
 vmins_1 = [0.3024966672957964, 0.0]
 frames_agent_1 = [(55, 58, 63), (92, 98, 102)]
-calc_avg(1, 1.25, vmins_1 ,frames_agent_1)
-trajectory_graph(1,1.25,frames_agent_1)
+calc_avg(1, 1.35, vmins_1 ,frames_agent_1)
 
 # Agent 2
 vmins_2 =[0.213895527771886, 0.2138947867901168]
@@ -215,10 +229,10 @@ calc_avg(21, 1.55, vmins_21, frames_agent_21)
 
 
 # Extract the data from avg_dict
-vd_values = [avg_dict[agent_id]['vd'] for agent_id in avg_dict]
-avg_da_values = [avg_dict[agent_id]['Average_da'] for agent_id in avg_dict]
-avg_tauA_values = [avg_dict[agent_id]['Average_tauA'] for agent_id in avg_dict]
-avg_tauP_values = [avg_dict[agent_id]['Average_tauP'] for agent_id in avg_dict]
+vd_values = [avg_dict[agent_id]['$v_d$'] for agent_id in avg_dict]
+avg_da_values = [avg_dict[agent_id]['$d_a$'] for agent_id in avg_dict]
+avg_tauA_values = [avg_dict[agent_id]['$\\tau_a$'] for agent_id in avg_dict]
+avg_tauP_values = [avg_dict[agent_id]['$\\tau_p$'] for agent_id in avg_dict]
 
 # Calculate the average and standard deviation
 average_vd = np.mean(vd_values)
@@ -226,30 +240,17 @@ average_avg_da = np.mean(avg_da_values)
 average_avg_tauA = np.mean(avg_tauA_values)
 average_avg_tauP = np.mean(avg_tauP_values)
 
+
 std_vd = np.std(vd_values)
 std_avg_da = np.std(avg_da_values)
 std_avg_tauA = np.std(avg_tauA_values)
 std_avg_tauP = np.std(avg_tauP_values)
 
-# Extract tauP and vd values from avg_dict
-tauP_values = [avg_dict[agent_id]['Average_tauP'] for agent_id in avg_dict]
-vd_values = [avg_dict[agent_id]['vd'] for agent_id in avg_dict]
-
-# Create the scatter plot
-plt.figure(figsize=(10, 6))
-plt.scatter(vd_values, tauP_values,  marker='o', label='Agents', color='blue')
-plt.title('tauP vs. vd')
-plt.xlabel('vd')
-plt.ylabel('tauP')
-plt.grid(True)
-plt.legend()
-plt.show()
-
 # Print the results
 print(f"Average vd: {average_vd:.2f}, Std vd: {std_vd:.2f}")
-print(f"Average Average_da: {average_avg_da:.2f}, Std Average_da: {std_avg_da:.2f}")
-print(f"Average Average_tauA: {average_avg_tauA:.2f}, Std Average_tauA: {std_avg_tauA:.2f}")
-print(f"Average Average_tauP: {average_avg_tauP:.2f}, Std Average_tauP: {std_avg_tauP:.2f}")
+print(f"Average da: {average_avg_da:.2f}, Std Average_da: {std_avg_da:.2f}")
+print(f"Average tauA: {average_avg_tauA:.2f}, Std Average_tauA: {std_avg_tauA:.2f}")
+print(f"Average tauP: {average_avg_tauP:.2f}, Std Average_tauP: {std_avg_tauP:.2f}")
 
 
 # dataframe
@@ -257,40 +258,3 @@ avg_df = pd.DataFrame(avg_dict).T
 # print table
 print(avg_df)
 
-
-# da vs tauA
-da_values = avg_df['Average_da']
-tauA_values = avg_df['Average_tauA']
-
-plt.figure(figsize=(10, 6))
-plt.scatter(da_values, tauA_values, marker='o', label='Agentes')
-plt.title('TauA en función de da')
-plt.xlabel('da')
-plt.ylabel('TauA')
-plt.grid(True)
-plt.legend()
-plt.show()
-
-
-avg_df = avg_df.round(2)
-
-# add uid
-avg_df['Agent'] = avg_df.index
-promedios_df = avg_df[['Agent'] + [col for col in avg_df.columns if col != 'Agent']]
-
-fig, ax = plt.subplots(figsize=(8, 6))
-
-# create table
-tabla = ax.table(cellText=promedios_df.values, colLabels=promedios_df.columns, cellLoc='center', loc='center', colColours=['#f0f0f0', '#f0f0f0', '#f0f0f0', '#f0f0f0'])
-
-# table format
-tabla.auto_set_font_size(False)
-tabla.set_fontsize(12)
-tabla.scale(1, 1.5)
-
-# hide axis
-ax.axis('off')
-
-# save img
-plt.savefig('tabla_promedios.png', bbox_inches='tight', pad_inches=0.1)
-plt.show()

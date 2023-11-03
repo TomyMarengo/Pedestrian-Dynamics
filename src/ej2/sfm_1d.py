@@ -4,12 +4,12 @@ import numpy as np
 import os
 
 # CHANGE UID HERE
-uid = 2
+uid = 12
 # CHANGE PARAMETERS HERE
-taus = [0.1+ i * 0.01 for i in range(int((3-0.3) / 0.01) + 1)]
-from_frame = 38
-to_frame = 46
-vd = 1.63
+taus = [0.2+ i * 0.01 for i in range(int((3-0.2) / 0.01) + 1)]
+from_frame = 191
+to_frame = 208
+vd = 1.5
 # Time step between frames
 dt = 4 / 30
 # Read the merged txt file into a DataFrame
@@ -57,7 +57,7 @@ v_original = original_trajectory['Velocity']
 errors = []
 
 for i, tau in enumerate(taus):
-    v = sfm_1D(tau, 0.25, vd,   from_frame, to_frame)
+    v = sfm_1D(tau,0.0, vd,    from_frame, to_frame)
     v = v[::100]
     aux = np.mean((v_original - v) **2)
     errors.append((tau, aux))
@@ -83,17 +83,7 @@ print(tau_for_min_mse)
 
 # Crear un gráfico de puntos con línea
 plt.plot(taus, mse_values, marker='o', linestyle='-')
-plt.xlabel('Valor de Tau')
+plt.xlabel('Valores de $\\tau_a$ (s)')
 plt.ylabel('Error Cuadrático Medio (MSE)')
-plt.title('MSE vs Tau')
 plt.grid(True)
-plt.show()
-
-plt.figure()
-plt.plot(original_trajectory['Frame']*4/30, original_trajectory['Velocity'], marker = "o")
-plt.xlabel('Tiempo (s)')
-plt.ylabel('Velocidad $(\\frac{m}{s})$')
-v = sfm_1D(tau_for_min_mse, 0.25, vd, from_frame, to_frame)
-v = v[::100]
-plt.plot(t, v, marker='o')
 plt.show()
