@@ -274,10 +274,36 @@ print(f"Collisions: {unique_collisions}")
 print(f"Distance travelled: {pedestrian.distance_travelled} m")
 print(f"Average velocity: {pedestrian.distance_travelled / (25000 * 4/30/100)} m/s")
 
-x_values = [4/30/100 * i for i in range(25000)]
-plt.plot(x_values, pedestrian.minimum_distances, marker = '.', linestyle='-')
+min_dist = [pedestrian.minimum_distances[i] for i in range(len(pedestrian.minimum_distances)) if i % 100 == 0]
+
+min_locales = []
+
+for i in range(1, len(min_dist) - 13):
+    if min_dist[i - 1] > min_dist[i] and min_dist[i] < min_dist[i + 1]:
+        min_locales.append((i, min_dist[i]))
+
+x_values = [4/30 * i for i in range(1, (len(min_dist)) + 1)]
+
+
+
+min_locales_values = [mins for i, mins in min_locales]
+min_locales_i = [i for i, mins in min_locales]
+
+print(min_locales_values)
+mean_min_locales = np.mean(min_locales_values)
+stdev_min_locales = np.std(min_locales_values)
+print(f"Media de los mínimos locales: {mean_min_locales}")
+print(f"Desviación estándar de los mínimos locales: {stdev_min_locales}")
+
+x_min_locales = [i * 4/30 for i in min_locales_i]
+
+# Graficar los puntos
+plt.plot(x_values, min_dist, marker='.', linestyle='-')
+
+plt.plot(x_min_locales, min_locales_values, c='r', marker='o', label='Mínimos locales', linestyle='None')  # Puntos de la leyenda
 plt.xlabel('Tiempo (s)')
 plt.ylabel('Distancia mínima (m)')
 plt.xticks(np.arange(0, 251 * 4/30, 5))
 plt.grid(True)
-plt.savefig(f'img/minimum_distances.png')
+plt.legend()
+plt.savefig('img/minimum_distances.png')
