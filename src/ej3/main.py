@@ -89,7 +89,10 @@ class VirtualPedestrian:
         return "left" if cross_product > 0 else "right"
 
     def avoid_collision(self):
-        frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
+        if self.real_frame >= 250:
+            frame_df = self.df.loc[self.df['Frame'] == self.real_frame]
+        else:
+            frame_df = self.df.loc[self.df['Frame'] == self.real_frame + 2]
         min_distance = float('inf')
         closest_pedestrian = None
 
@@ -252,10 +255,10 @@ initial_position = (9.75, -6.5)
 # TP = 0.76
 
 # A bit faster
-VD = 1.65
-DA = 1.56
-TA = 0.68
-TP = 0.48
+VD = 1.60
+DA = 1.44
+TA = 0.88
+TP = 0.68
 
 with open('../../txt/virtual_pedestrian_trajectory.txt', 'w') as f:
     f.write(f"{1}\t{initial_position[1]}\t{initial_position[0]}\t{0}\t{0}\t{targets[0][1]}\t{targets[0][0]}\n")
