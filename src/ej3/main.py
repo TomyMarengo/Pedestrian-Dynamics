@@ -38,11 +38,11 @@ def beeman(r, v, f, last_f, e_target, tau, VD):
     return r_pred, v_corr
 
 class VirtualPedestrian:
-    def __init__(self, initial_position, targets, VD, DA, TA, TP, df, collisions, distance_travelled, minimum_distances):
-        self.VD = VD
-        self.DA = DA
-        self.TA = TA
-        self.TP = TP
+    def __init__(self, initial_position, targets, VD, DA, TA, TP, df):
+        self.VD = float(VD)
+        self.DA = float(DA)
+        self.TA = float(TA)
+        self.TP = float(TP)
         self.MASS = 70
         self.position = initial_position
         self.v = (0, 0)
@@ -59,9 +59,9 @@ class VirtualPedestrian:
         self.df = df
         self.adjustment_factor = 0.99
         
-        self.collisions = collisions # DATA
-        self.distance_travelled = distance_travelled # DATA
-        self.minimum_distances = minimum_distances # DATA
+        self.collisions = [] # DATA
+        self.distance_travelled = 0 # DATA
+        self.minimum_distances = [] # DATA
 
     def calculate_e_target(self):
         dx = self.target[0] - self.position[0]
@@ -130,7 +130,7 @@ class VirtualPedestrian:
                 if other_dir == "left":
                     temp_target = self.position + (5 * closest_pedestrian['vx'] , 5 * closest_pedestrian['vy']) * p_right + u_norm
                 else:
-                        temp_target = self.position + (5 * closest_pedestrian['vx'] , 5 * closest_pedestrian['vy']) * p_left + u_norm
+                    temp_target = self.position + (5 * closest_pedestrian['vx'] , 5 * closest_pedestrian['vy']) * p_left + u_norm
 
                 self.target = temp_target
             else:
@@ -158,7 +158,7 @@ class VirtualPedestrian:
         
         v1 = (closest_pedestrian['vx'], closest_pedestrian['vy'])
         v2 = (self.targets[self.i_target][0] - closest_pedestrian['X'], self.targets[self.i_target][1] - closest_pedestrian['Y'])
-        
+            
         dot_product = v1[0] * v2[0] + v1[1] * v2[1]
         # Magnitudes
         magnitude_v1 = math.sqrt(v1[0]**2 + v1[1]**2)
@@ -182,7 +182,7 @@ class VirtualPedestrian:
             distance = dist(frame_df.iloc[i]['X'], frame_df.iloc[i]['Y'], self.position[0], self.position[1])
             
             if distance < 0.6:  # 2 * 0.3 radius
-                overlap = 0.6 - distance  # How much the pedestrians overlap
+                overlap = distance - 0.6  # How much the pedestrians overlap
                 
                 # Hooke's law to calculate force
                 k = 50  # This is an arbitrary value, adjust as needed
@@ -249,19 +249,14 @@ initial_position = (9.75, -6.5)
 
 # A bit faster
 VD = 1.74
-DA = 1.14
-TA = 0.95
-TP = 0.62
+DA = 1.56
+TA = 0.68
+TP = 0.48
 
 with open('../../txt/virtual_pedestrian_trajectory.txt', 'w') as f:
     f.write(f"{1}\t{initial_position[1]}\t{initial_position[0]}\t{0}\t{0}\t{targets[0][1]}\t{targets[0][0]}\n")
 
-# DATA
-collisions = []
-distance_travelled = 0
-minimum_distances = []
-
-pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df, collisions, distance_travelled, minimum_distances)
+pedestrian = VirtualPedestrian(initial_position, targets, VD, DA, TA, TP, df)
 for i in range(25000):
     pedestrian.calculate_new_position()
 
@@ -273,7 +268,7 @@ print(f"Distance travelled: {pedestrian.distance_travelled} m")
 print(f"Average velocity: {pedestrian.distance_travelled / (25000 * 4/30/100)} m/s")
 
 x_values = [4/30/100 * i for i in range(25000)]
-plt.plot(x_values, pedestrian.minimum_distances, marker = 'o', linestyle='-')
+plt.plot(x_values, pedestrian.minimum_distances, marker = '.', linestyle='-')
 plt.xlabel('Tiempo (s)')
 plt.ylabel('Distancia mínima (m)')
 plt.xticks(np.arange(0, 251 * 4/30, 5))
