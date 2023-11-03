@@ -67,13 +67,13 @@ for i, tau in enumerate(taus):
 
 plt.xlabel('Tiempo (s)')
 plt.ylabel('Velocidad $(\\frac{m}{s})$')
-plt.title(f'Agente {int(uid)}')  # TODO: Quitar esto
+plt.title(f'Agente {int(uid)}') 
 plt.legend()
 plt.savefig(f'img/velocity_tau_{int(uid)}.png')
 plt.show()
 print(f'Graph saved at img/velocity_tau_{int(uid)}.png')
 
-# Extraer los valores de tau y MSE
+#Extract Tau and MSE values
 taus = [tau for tau, mse in errors]
 mse_values = [mse for tau, mse in errors]
 
@@ -81,7 +81,7 @@ min_mse = min(mse_values)
 tau_for_min_mse = [tau for tau, mse in zip(taus, mse_values) if mse == min_mse][0]
 print(tau_for_min_mse)
 
-# Crear un gráfico de puntos con línea
+# MSE graphics
 plt.plot(taus, mse_values, marker='o', linestyle='-')
 plt.xlabel('Valores de $\\tau_a$ (s)')
 plt.ylabel('Error Cuadrático Medio (MSE)')
